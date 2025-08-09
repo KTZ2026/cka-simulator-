@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>CKA 模擬考系統 - iOS 相容版</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; }
+button { margin: 5px; }
+pre { background: #f5f5f5; padding: 10px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h1>CKA 模擬考系統 - iOS 相容版</h1>
+<p>此版本可離線在 iOS Safari（file:// 模式）正常使用。</p>
+
+<div>
+<label>選擇題目數: <input id="numQ" type="number" value="3" min="1" max="150"></label>
+<button onclick="startExam()">開始模擬考</button>
+</div>
+
+<div id="exam"></div>
+<div id="result" style="font-weight:bold; margin-top:20px;"></div>
+
+<script>
+const BANK = [
+  {"id": "q1", "type": "mc", "question": "Kubernetes 中用來創建 Pod 的物件是？", "options": ["Deployment", "Service", "ConfigMap"], "answer": 0},
+  {"id": "q2", "type": "yaml", "question": "填寫正確的 API 版本", "template": "apiVersion: ____\nkind: Pod", "answer": "v1"},
+  {"id": "q3", "type": "cmd", "question": "列出所有 Namespace", "answer": "kubectl get ns"}
+];
+let currentExam = [];
+
+function clearElement(el) {
+    while (el.firstChild) el.removeChild(el.firstChild);
+}
+
+function startExam() {
+    const numQ = parseInt(document.getElementById('numQ').value);
+    currentExam = BANK.sort(() => 0.5 - Math.random()).slice(0, numQ);
+    const examDiv = document.getElementById('exam');
+    clearElement(examDiv);
+
+    currentExam.forEach((q, idx) => {
+        let container = document.createElement('div');
+        let title = document.createElement('b');
+        title.textContent = `Q${idx+1}: ${q.question}`;
+        container.appendChild(title);
+        container.appendChild(document.createElement('br'));
+
+        if(q.type === "mc") {
+            q.options.forEach((opt, i) => {
+                let label = document.createElement('label');
+                let radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = q.id;
+                radio.value = i;
+                label.appendChild(radio);
+                label.appendChild(document.createTextNode(' ' + opt));
+                container.appendChild(label);
+                container.appendChild(document.createElement('br'));
+            });
+        } else if(q.type === "yaml") {
+            let pre = document.createElement('pre');
+            pre.textContent = q.template;
+            container.appendChild(pre);
+            let input = document.createElement('input');
+            input.type = 'text';
+            input.name = q.id;
+            input.placeholder = '填入答案';
+            container.appendChild(input);
+        } else if(q.type === "cmd") {
+            let input = document.createElement('input');
+            input.type = 'text';
+            input.name = q.id;
+            input.placeholder = '輸入命令';
+            container.appendChild(input);
+        }
+
+        container.appendChild(document.createElement('hr'));
+        examDiv.appendChild(container);
+    });
+
+    let submitBtn = document.createElement('button');
+    submitBtn.textContent = '提交';
+    submitBtn.onclick = submitExam;
+    examDiv.appendChild(submitBtn);
+}
+
+function submitExam() {
+    let correct = 0;
+    let total = currentExam.length;
+
+    currentExam.forEach(q => {
+        const els = document.getElementsByName(q.id);
+        if(els.length) {
+            if(q.type === "mc") {
+                const checked = Array.from(els).find(e => e.checked);
+                if(checked && parseInt(checked.value) === q.answer) correct++;
+            } else {
+                const val = els[0].value.trim();
+                if(val.toLowerCase() === q.answer.toLowerCase()) correct++;
+            }
+        }
+    });
+    document.getElementById('result').textContent = `得分: ${correct} / ${total}`;
+}
+</script>
+</body>
+</html>
